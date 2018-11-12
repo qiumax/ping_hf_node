@@ -130,14 +130,27 @@ app.use(function(err, req, res, next) {
 
 // schedule
 var schedule = require("node-schedule");
-var Ping = require('./models/Ping');
+var PingController = require('./controllers/PingController');
 
-schedule.scheduleJob('* */10 * * * ?', function(){
-    Ping.updateFullPing();
+schedule.scheduleJob('*/10 * * * * ?', function(){
+    console.log(new Date());
+    PingController.updateCurrentPing();
 })
 
-schedule.scheduleJob('* */2 * * * ?', function(){
+schedule.scheduleJob('0 */5 * * * ?', function(){
+    console.log(new Date());
+    // Ping.updateFullPing();
+})
+
+schedule.scheduleJob('30 */1 * * * ?', function(){
+    console.log(new Date());
     // Ping.updateExpiredPing();
 })
+
+// var CurrentPing = require('./models/CurrentPing');
+// schedule.scheduleJob('0 * * * * ?', function(){
+//     console.log(new Date());
+//     CurrentPing.updatePing();
+// })
 
 module.exports = app;

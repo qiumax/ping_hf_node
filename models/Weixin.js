@@ -3,7 +3,8 @@ module.exports = Weixin;
 var config = require("../config/wx");
 var request = require('request');
 const qs = require('querystring');
-
+var randomstring = require("randomstring");
+var fs = require("fs");
 const _appid = config.appid;
 const _secret = config.secret;
 const _key = config.key;
@@ -178,34 +179,34 @@ Weixin.verifyNotify = function(xml, cb) {
 }
 
 Weixin.sendTemplateMsg = function (data) {
-    this.getAccessToken();
+    this.getAccessToken().then(function (token) {
+        var reqUrl = 'https://api.weixin.qq.com/cgi-bin/message/wxopen/template/send?access_token=' + token;
 
-    var reqUrl = 'https://api.weixin.qq.com/cgi-bin/message/wxopen/template/send?access_token=' + accessToken;
+        var string = JSON.stringify(data);
+        console.log(string);
 
-    var string = JSON.stringify(data);
-    console.log(string);
+        var options = {
+            url: reqUrl,
+            method: "POST",
+            body: string
+        };
 
-    var options = {
-        url: reqUrl,
-        method: "POST",
-        body: string
-    };
+        console.log(options);
 
-    console.log(options);
-
-    return new Promise( function(resolve, reject) {
-        request(options, function (err, res, body) {
-            if (res) {
-                var data = JSON.parse(body);
-                console.log("sendTemplateMsg success");
-                console.log(data);
-                resolve(data);
-            } else {
-                console.log(err);
-                reject(err);
-            }
-        })
-    });
+        return new Promise( function(resolve, reject) {
+            request(options, function (err, res, body) {
+                if (res) {
+                    var data = JSON.parse(body);
+                    console.log("sendTemplateMsg success");
+                    console.log(data);
+                    resolve(data);
+                } else {
+                    console.log(err);
+                    reject(err);
+                }
+            })
+        });
+    })
 }
 
 Weixin.getAccessToken = function() {
@@ -249,4 +250,120 @@ Weixin.getAccessToken = function() {
             })
         });
     }
+}
+
+// 微信红包
+Weixin.sendRedpack = function(openid, amount_cents, redpack_id) {
+
+    var act_name = '三一卡车';
+    var client_ip = '47.106.98.38';
+    var mch_billno = redpack_id;
+    var mch_id = _mchid;
+    var nonce_str = randomstring.generate(32);
+    var re_openid = openid;
+    var remark = '三一卡车 分享红包';
+    var send_name = '三一卡车';
+    var total_amount = amount_cents;
+    var total_num = 1;
+    var wishing = '推荐朋友玩游戏，源源不断收红包！详情请关注游戏公告~';
+    var wxappid = _appid;
+
+    var sign = sendRedpackSign(
+        act_name,client_ip,mch_billno,
+        mch_id,nonce_str,re_openid,
+        remark,send_name,total_amount,
+        total_num,wishing,wxappid
+    );
+
+    var formData  = "<xml>";
+    formData  += "<act_name>"+act_name+"</act_name>";
+    formData  += "<client_ip>"+client_ip+"</client_ip>";
+    formData  += "<mch_billno>"+mch_billno+"</mch_billno>";
+    formData  += "<mch_id>"+mch_id+"</mch_id>";
+    formData  += "<nonce_str>"+nonce_str+"</nonce_str>";
+    formData  += "<re_openid>"+re_openid+"</re_openid>";
+    formData  += "<remark>"+remark+"</remark>";
+    formData  += "<send_name>"+send_name+"</send_name>";
+    formData  += "<total_amount>"+total_amount+"</total_amount>";
+    formData  += "<total_num>"+total_num+"</total_num>";
+    formData  += "<wishing>"+wishing+"</wishing>";
+    formData  += "<wxappid>"+wxappid+"</wxappid>";
+    formData  += "<sign>"+sign+"</sign>";
+    formData  += "</xml>";
+
+    console.log('formData: ');
+    console.log(formData);
+
+    var url = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/sendredpack';
+
+    var options = {
+        url: url,
+        method: 'POST',
+        body: formData,
+        agentOptions: {
+            pfx: fs.readFileSync('./wx_cert/apiclient_cert.p12'),
+            passphrase: _mchid
+        }
+    };
+
+    return new Promise( function(resolve, reject) {
+        request(options, function (err, res, body) {
+            if (res) {
+                resolve(body);
+            } else {
+                reject(err);
+            }
+        });
+    } );
+}
+
+function sendRedpackSign(act_name,client_ip,mch_billno,
+                         mch_id,nonce_str,re_openid,
+                         remark,send_name,total_amount,
+                         total_num,wishing,wxappid) {
+    var ret = {
+        act_name: act_name,
+        client_ip: client_ip,
+        mch_billno: mch_billno,
+        mch_id: mch_id,
+        nonce_str: nonce_str,
+        re_openid:re_openid,
+        remark:remark,
+        send_name:send_name,
+        total_amount:total_amount,
+        total_num:total_num,
+        wishing:wishing,
+        wxappid:wxappid
+    };
+    var string = raw(ret);
+    var key = _key;
+    string = string + '&key='+key;
+    var crypto = require('crypto');
+    return crypto.createHash('md5').update(string,'utf8').digest('hex');
+};
+
+// 小程序码
+Weixin.getWXACode = function(scene, cb) {
+    this.getAccessToken().then(token => {
+        console.log('token1');
+        console.log(token);
+        var reqUrl = 'https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token='+token;
+
+        var params = {
+            scene: scene
+        };
+        var string = JSON.stringify(params);
+        console.log(string);
+
+        var options = {
+            url: reqUrl,
+            method: "POST",
+            body: string
+        };
+
+        request(options, function (err, res, body) {
+            console.log(err);
+            cb(body, err);
+        })
+    })
 }

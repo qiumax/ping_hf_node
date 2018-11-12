@@ -1,10 +1,13 @@
 var mongoose = require("mongoose");
 var Ping = require("../models/Ping");
 var Product = require("../models/Product");
+var CurrentPing = require('../models/CurrentPing');
+var Ping = require('../models/Ping');
 var User = require("../models/User");
 var UserPing = require("../models/UserPing");
 var Manager = require("../models/Manager");
 var Weixin = require("../models/Weixin");
+var moment = require('moment');
 
 var pingController = {};
 
@@ -17,6 +20,17 @@ pingController.ping = function(req, res) {
     })
 };
 
+pingController.currentPing = function (req, res) {
+    console.log(req.body);
+
+    CurrentPing.findOne().populate('ping').then(currentPing =>{
+        var ping = currentPing.ping;
+        var ts = new Date().getTime()/1000;
+        res.send({ping: ping, server_ts:ts});
+    }) 
+}
+
+/*
 // 发起拼团
 pingController.createPing = function(req, res) {
     console.log(req.body);
@@ -74,6 +88,7 @@ pingController.createPing = function(req, res) {
                         sponsor: user_id,
                         name: req.body.name,
                         phone: req.body.phone,
+                        form_id: req.body.form_id,
                         sub_fee: product.sub_fee,
                         pay_state: 0,
                         ping_finish: 0,
@@ -99,7 +114,7 @@ pingController.createPing = function(req, res) {
                             timestamp: req.body.timestamp
                         }, function (pay_data) {
                             var prepay_id = pay_data.prepay_id;
-                            userPing.form_id = prepay_id;
+                            userPing.pay_form_id = prepay_id;
                             userPing.save();
 
                             res.send(pay_data);
@@ -110,6 +125,7 @@ pingController.createPing = function(req, res) {
         })
     // })
 }
+*/
 
 // 参与拼团
 pingController.joinPing = function(req, res) {
@@ -122,6 +138,11 @@ pingController.joinPing = function(req, res) {
         console.log("ping: ");
         console.log(ping);
 
+        if(ping.state==2){
+            res.send({err: "该团已结束，请返回拼团页面, 下拉刷新"});
+            return;
+        }
+
         Product.findById(ping.product_id).then( product => {
             console.log("product: ");
             console.log(product);
@@ -129,6 +150,11 @@ pingController.joinPing = function(req, res) {
             User.findById(user_id).then( user => {
                 console.log("user: ");
                 console.log(user);
+
+                if(user.join_num>=3) {
+                    res.send({err: "您拼团次数已达3次"});
+                    return;
+                }
 
                 // Manager.find().sort({'appoint_num':1}).limit(1)
                 // .then(managers=> {
@@ -138,43 +164,48 @@ pingController.joinPing = function(req, res) {
                 //     manager.appoint_num++;
                 //     manager.save();
 
-                    var userPing = new UserPing({
-                        user_id: user_id,
-                        ping_id: ping.id,
-                        sponsor: user_id,
-                        name: req.body.name,
-                        phone: req.body.phone,
-                        sub_fee: product.sub_fee,
-                        pay_state: 0,
-                        ping_state: 0,
-                        use_state: 0
-                        // m_name: manager.name,
-                        // m_phone: manager.phone,
-                        // m_wx: manager.wx,
-                        // m_email: manager.email,
-                        // m_avatar: manager.avatar
+                var userPing = new UserPing({
+                    user_id: user_id,
+                    ping_id: ping.id,
+                    sponsor: user_id,
+                    name: req.body.name,
+                    phone: req.body.phone,
+                    form_id: req.body.form_id,
+                    sub_fee: product.sub_fee,
+                    pay_state: 0,
+                    ping_finish: 0,
+                    use_state: 0
+                    // m_name: manager.name,
+                    // m_phone: manager.phone,
+                    // m_wx: manager.wx,
+                    // m_email: manager.email,
+                    // m_avatar: manager.avatar
+                })
+
+                userPing.save().then(aUserPing => {
+                    console.log('aUserPing');
+                    console.log(aUserPing);
+
+                    if(user.join_num>=0) user.join_num++;
+                    else user.join_num = 1;
+                    user.save();
+
+                    Weixin.jsapipay({
+                        user_ping_id: aUserPing.id,
+                        attach: req.body.attach,
+                        nonce_str: req.body.nonce_str,
+                        sub_fee: aUserPing.sub_fee,
+                        openid: user.openid,
+                        description: "三一重卡订金",
+                        timestamp: req.body.timestamp
+                    }, function (pay_data) {
+                        var prepay_id = pay_data.prepay_id;
+                        userPing.pay_form_id = prepay_id;
+                        userPing.save();
+
+                        res.send(pay_data);
                     })
-
-                    userPing.save().then(aUserPing => {
-                        console.log('aUserPing');
-                        console.log(aUserPing);
-
-                        Weixin.jsapipay({
-                            user_ping_id: aUserPing.id,
-                            attach: req.body.attach,
-                            nonce_str: req.body.nonce_str,
-                            sub_fee: aUserPing.sub_fee,
-                            openid: user.openid,
-                            description: "三一重卡订金",
-                            timestamp: req.body.timestamp
-                        }, function (pay_data) {
-                            var prepay_id = pay_data.prepay_id;
-                            userPing.form_id = prepay_id;
-                            userPing.save();
-
-                            res.send(pay_data);
-                        })
-                    })
+                })
                 // })
             })
         })
@@ -196,6 +227,153 @@ pingController.avatars = function(req, res) {
 	res.send(avatars)
     })
 };
+
+// 更新当前的Ping
+pingController.updateCurrentPing = function () {
+    console.log('updateCurrentPing');
+
+    CurrentPing.findOne().populate('ping')
+        .then(currentPing=>{
+            console.log("CurrentPing: ");
+            console.log(currentPing);
+
+            // 不存在
+            if(!currentPing) {
+                console.log("不存在");
+                createPing();
+            }
+            else {
+                var ping = currentPing.ping;
+
+                var now_date = new Date();
+                var now_ts = new Date().getTime()/1000;
+
+                console.log(now_date);
+                console.log(now_ts);
+
+                console.log(ping.finish_num>=200 && ping.updated_at<(now_date-1*60*1000));
+                console.log(ping.expire<(now_ts-1*60));
+
+                // 已满
+                if(ping.finish_num>=200 && ping.updated_at<(now_date-1*60*1000)) {
+                    console.log("已满");
+                    updatePing(ping);
+                }
+                // 已过期
+                else if(ping.expire<(now_ts-1*60)) {
+                    console.log("已过期");
+                    updatePing(ping);
+                }
+            }
+        })
+}
+
+createPing = function() {
+    console.log("Creating Ping");
+
+    var product_id = "5bda65617c65fac03d619993";
+
+    Product.findById(product_id).then( product => {
+        console.log("product: ");
+        console.log(product);
+
+        var ts = new Date().getTime()/1000;
+        var expire = ts + product.expire * 86400;
+
+        var ping = new Ping({
+            product_id: product_id,
+            product_name: product.name,
+            price_origin: product.price_origin,
+            price_bottom: product.price_bottom,
+            sponsor_bonus: product.sponsor_bonus,
+            less_minus: product.less_minus,
+            rules: product.rules,
+            finish_num: 0,
+            expire: expire,
+            sub_fee: product.sub_fee,
+            state: 1
+        });
+
+        ping.save().then(aPing => {
+            console.log("New Current Ping");
+            console.log(aPing);
+
+            var currentPing = new CurrentPing({
+                ping: aPing._id
+            })
+
+            CurrentPing.deleteMany({},function (err) {
+                if (err) console.log(err);
+                currentPing.save().then(aCurrentPing => {
+                    console.log("Current Ping saved: ");
+                    console.log(aCurrentPing)
+                })
+            })
+        })
+    })
+}
+
+updatePing = function (ping) {
+    // 更新ping
+    ping.finish_time = new Date().getTime()/1000;
+    ping.need_process = 1;
+    ping.processed = 0;
+    ping.state = 2;
+
+    ping.save(function (err, aPing) {
+        console.log('ping state set to 2');
+        console.log(aPing);
+
+        createPing();
+
+        // 更新user_ping
+        UserPing.find({
+            ping_id: ping._id,
+            pay_state: 1
+        }).then(userpings => {
+            for(var i=0; i<userpings.length; i++) {
+                var userping = userpings[i];
+                userping.ping_finish = 1;
+                userping.ping_finish_time = aPing.finish_time;
+                userping.finish_num = aPing.finish_num;
+                userping.need_process = 1;
+                userping.processed = 0;
+                userping.bonus = getBonus(aPing.rules, aPing.finish_num);
+                userping.save(function (err, aUserPing) {
+                    User.findById(aUserPing.user_id).then(user=> {
+                        // 模板消息
+                        var data = {
+                            touser: user.openid,
+                            template_id: "0Ismn4fy3jEsr_fR79DT6hErBvYD-wL0Pl_o_1NjO6w",
+                            form_id: aUserPing.form_id,
+                            page: 'pages/mypings/index?user_ping_id='+aUserPing._id,
+                            data: {
+                                keyword1: {value: aUserPing._id},
+                                keyword2: {value: "三一重卡"},
+                                keyword3: {value: aUserPing.finish_num},
+                                keyword4: {value: moment().format('YYYY-MM-DD HH:mm:ss')},
+                                keyword5: {value: aUserPing.sub_fee / 100 + '元'},
+                                keyword6: {value: aUserPing.bonus + '元'},
+                                keyword7: {value: (aPing.price_origin - aUserPing.bonus) + '元'},
+                                keyword8: {value: "如有任何疑问，请致电: 4009995318"}
+                            }
+                        }
+                        Weixin.sendTemplateMsg(data);
+                    })
+                })
+            }
+        })
+    })
+}
+
+getBonus = function (rules, finish_num) {
+    for(var i=rules.length-1; i>=0; i--) {
+        if(finish_num >= rules[i].num) {
+            return rules[i].bonus;
+        }
+    }
+    return 0;
+}
 
 // admin
 pingController.addPing = function(req, res) {

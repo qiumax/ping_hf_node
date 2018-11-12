@@ -7,7 +7,10 @@ var ProductSchema = new Schema({
     price_bottom: Number,
     sponsor_bonus: Number,
     less_minus: Number,
-    rules: [Map],
+    rules: [{
+        num: Number,
+        bonus: Number
+    }],
     expire: Number,
     sub_fee: Number,
 }, {timestamps: {createdAt: 'created_at', updatedAt: 'updated_at'}});

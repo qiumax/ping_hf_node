@@ -15,19 +15,23 @@ var UserPingSchema = new Schema({
     name: String,
     phone: String,
     form_id: String,
+    pay_form_id: String,
     sub_fee: Number,
     pay_state: Number,
     ping_finish: Number,
+    ping_finish_time: Number,
+    finish_num: Number,
     use_state: Number,
+    bonus: Number,
     need_refund: Boolean,
     refunded: Boolean,
     need_process: Boolean,
     processed: Boolean,
-    m_name: String,
-    m_phone: String,
-    m_wx: String,
-    m_email: String,
-    m_avatar: String
+    // m_name: String,
+    // m_phone: String,
+    // m_wx: String,
+    // m_email: String,
+    // m_avatar: String
     // manager: {
     //     type: mongoose.Schema.ObjectId,
     //     ref: 'Manager'

@@ -7,6 +7,12 @@ router.post('/userpings', userController.userpings);
 
 router.post('/userping', userController.userping);
 
+router.post('/userfollowers', userController.userfollowers);
+
+router.post('/userpacks', userController.userpacks);
+
+router.post('/wxacode', userController.wxacode);
+
 // admin
 
 module.exports = router;

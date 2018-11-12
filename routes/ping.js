@@ -5,7 +5,9 @@ var pingController = require("../controllers/PingController.js");
 // wx
 router.post('/', pingController.ping);
 
-router.post('/createPing', pingController.createPing);
+router.post('/currentPing', pingController.currentPing);
+
+// router.post('/createPing', pingController.createPing);
 
 router.post('/joinPing', pingController.joinPing);
 
