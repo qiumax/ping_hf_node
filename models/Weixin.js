@@ -361,9 +361,7 @@ Weixin.getWXACode = function(scene, cb) {
             body: string
         };
 
-        request(options, function (err, res, body) {
-            console.log(err);
-            cb(body, err);
-        })
+        var stream = request(options).pipe(fs.createWriteStream('./public/wxacode/' + scene+'.png'));
+        stream.on('finish', cb);
     })
 }

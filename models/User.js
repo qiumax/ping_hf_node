@@ -9,6 +9,7 @@ var UserSchema = new Schema({
     refer2_id: String,
     name: String,
     avatar: String,
+    phone: String,
     gender: String,
     city: String,
     province: String,
@@ -28,12 +29,12 @@ UserSchema.statics.getReferids = function (refer1_id, cb) {
                 cb(refer1_id, refer2_id);
             }
             else {
-                cb(refer1_id, 0);
+                cb(refer1_id, "0");
             }
         })
     }
     else {
-        cb(0, 0);
+        cb("0", "0");
     }
 }
 

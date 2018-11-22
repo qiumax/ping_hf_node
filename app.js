@@ -9,14 +9,14 @@ var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://sa_ping:wending0304@localhost/ping', { useNewUrlParser: true })
+mongoose.connect('mongodb://sa_ping:wending0304@172.30.0.5:27017/ping', { useNewUrlParser: true })
     .then(() =>  console.log('connection succesful'))
 .catch((err) => console.error(err));
 
 var session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 var redis = require("redis");
-var client = redis.createClient();
+var client = redis.createClient(6379, '172.30.0.4');
 
 var app = express();
 
@@ -31,10 +31,10 @@ app.use(cookieParser());
 
 app.use(session({
     store: new RedisStore({
-        host: "localhost",
+        host: "172.30.0.4",
         port: 6379,
         pass: 'wending0304',
-        ttl: 604800,
+        ttl: 3600,
         client: client
     }),
     secret: "sany_truck",
@@ -50,6 +50,8 @@ var user = require('./routes/user');
 var product = require('./routes/product');
 var ping = require('./routes/ping');
 var wx = require('./routes/wx');
+var sms = require('./routes/sms');
+var activity = require('./routes/activity');
 
 // passport configuration
 var User = require('./models/User');
@@ -60,8 +62,8 @@ passport.use(new LocalStrategy({
     },
     function (username, password, done) {
         User.findOne({'openid': username}).then(function (user) {
-            console.log('user');
-            console.log(user);
+            // console.log('user');
+            // console.log(user);
             if(user) {
                 return done(null, user);
             }
@@ -76,7 +78,7 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 app.use('/api', function (req, res, next) {
-    console.log(req.body);
+    // console.log(req.body);
     var session_id = req.body.s_id;
     var user_id = req.body.user_id;
     console.log("session_id: " + session_id);
@@ -86,7 +88,6 @@ app.use('/api', function (req, res, next) {
         client.get(session_id, function (err, reply) {
             if(reply) {
                 var sess = JSON.parse(reply);
-                console.log(sess);
                 var user_id_in_session = sess.uid;
                 if(user_id_in_session==user_id) {
                     return next();
@@ -109,6 +110,8 @@ app.use('/api/user', user);
 app.use('/api/product', product);
 app.use('/api/ping', ping);
 app.use('/wx', wx);
+app.use('/api/sms', sms);
+app.use('/api/activity', activity);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -132,7 +135,12 @@ app.use(function(err, req, res, next) {
 var schedule = require("node-schedule");
 var PingController = require('./controllers/PingController');
 
-schedule.scheduleJob('*/10 * * * * ?', function(){
+schedule.scheduleJob('0 * * * * ?', function(){
+    console.log(new Date());
+    PingController.startActivity();
+})
+
+schedule.scheduleJob('0 * * * * ?', function(){
     console.log(new Date());
     PingController.updateCurrentPing();
 })
@@ -146,11 +154,5 @@ schedule.scheduleJob('30 */1 * * * ?', function(){
     console.log(new Date());
     // Ping.updateExpiredPing();
 })
-
-// var CurrentPing = require('./models/CurrentPing');
-// schedule.scheduleJob('0 * * * * ?', function(){
-//     console.log(new Date());
-//     CurrentPing.updatePing();
-// })
 
 module.exports = app;

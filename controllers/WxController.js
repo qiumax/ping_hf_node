@@ -11,6 +11,8 @@ var Redpack = require("../models/Redpack");
 
 var wxController = {};
 
+
+
 wxController.getWxUserInfo = function(req, res) {
 
     console.log(req.body);
@@ -25,7 +27,7 @@ wxController.getWxUserInfo = function(req, res) {
         var openid = data.openid;
         var body = req.body;
         var refer_id = req.body.refer_id;
-
+        var session_key = data.session_key;
         req.body.username = openid;
         req.body.password = "pwd";
 
@@ -54,9 +56,9 @@ wxController.getWxUserInfo = function(req, res) {
                         }
 
                         passport.authenticate('local')(req, res, function () {
-                            console.log({user_id: user._id, s_id: 'sess:' + req.session.id});
+                            console.log({user_id: user._id, s_id: 'sess:' + req.session.id,session_key:session_key});
                             req.session.uid = user._id;
-                            res.json({user_id: user._id, s_id: 'sess:' + req.session.id});
+                            res.json({user_id: user._id, s_id: 'sess:' + req.session.id,session_key:session_key});
                         });
                     }
                     // 不存在
@@ -103,9 +105,9 @@ wxController.getWxUserInfo = function(req, res) {
                                 }
 
                                 passport.authenticate('local')(req, res, function () {
-                                    console.log({user_id: user._id, s_id: 'sess:' + req.session.id});
+                                    console.log({user_id: user._id, s_id: 'sess:' + req.session.id,session_key:session_key});
                                     req.session.uid = user._id;
-                                    res.json({user_id: user._id, s_id: 'sess:' + req.session.id});
+                                    res.json({user_id: user._id, s_id: 'sess:' + req.session.id,session_key:session_key});
                                 });
                             }
                         );
@@ -166,12 +168,12 @@ wxController.payNotify = function(req, res) {
                                         if(refer1_id !='0') {
                                             console.log("sendpack refer1");
                                             console.log(aUserPing._id);
-                                            sendRedpack(aUserPing._id, refer1_id, 1, 200);
+                                            sendRedpack(aUserPing.name,aUserPing._id, refer1_id, 1, 10000);
                                         }
 
                                         if(refer2_id !='0') {
                                             console.log("sendpack refer2");
-                                            sendRedpack(aUserPing._id, refer2_id, 2, 100);
+                                            sendRedpack(aUserPing.name,aUserPing._id, refer2_id, 2, 5000);
                                         }
                                     })
 
@@ -194,10 +196,11 @@ genRedpackId = function () {
     return redpack_id;
 }
 
-sendRedpack = function(user_ping_id, refer_id, level, amount) {
+sendRedpack = function(username,user_ping_id, refer_id, level, amount) {
     User.findById(refer_id).then(refer1=>{
         var redpack = new Redpack({
             level: level,
+	        username:username,
             user_ping_id: user_ping_id,
             to_user_id: refer1._id,
             to_openid: refer1.openid,
@@ -207,6 +210,7 @@ sendRedpack = function(user_ping_id, refer_id, level, amount) {
         })
 
         redpack.save().then(aRedpack=>{
+            /*
             Weixin.sendRedpack(aRedpack.to_openid, aRedpack.amount, aRedpack._id)
             .then(function (body) {
                 console.log(body);
@@ -227,6 +231,7 @@ sendRedpack = function(user_ping_id, refer_id, level, amount) {
                     }
                 })
             })
+            */
         })
     })
 }

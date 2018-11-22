@@ -13,6 +13,11 @@ router.post('/userpacks', userController.userpacks);
 
 router.post('/wxacode', userController.wxacode);
 
+router.post('/getInfo', userController.getInfo);
+
+router.post('/updateInfo', userController.updateInfo);
+
+router.post('/getphone', userController.getphone);
 // admin
 
 module.exports = router;

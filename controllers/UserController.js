@@ -4,16 +4,20 @@ var User = require("../models/User");
 var RedPack = require("../models/Redpack");
 var UserPing = require("../models/UserPing");
 var Weixin = require("../models/Weixin");
-
+var WXBizDataCrypt = require("../models/WXBizDataCrypt");
+var config = require("../config/wx");
+var fs = require('fs');
+var path = require('path');
+const _appid = config.appid;
 var userController = {};
 
 // wx
 userController.userpings = function(req, res) {
-    console.log(req.body);
-    console.log('here');
+    // console.log(req.body);
     var user_id = req.body.user_id;
     UserPing.find({
-        user_id: user_id
+        user_id: user_id,
+        pay_state: 1
     }).populate('ping_id').then(ups=>{
         console.log(ups)
         res.send(ups)
@@ -21,8 +25,7 @@ userController.userpings = function(req, res) {
 };
 
 userController.userping = function(req, res) {
-    console.log(req.body);
-    console.log('here');
+    // console.log(req.body);
     var user_ping_id = req.body.user_ping_id;
     UserPing.findById(user_ping_id).populate('ping_id').then(up=>{
         console.log(up)
@@ -32,7 +35,7 @@ userController.userping = function(req, res) {
 
 //followers
 userController.userfollowers = function (req, res) {
-    console.log(req.body);
+    // console.log(req.body);
     var fields;
     var user_id = req.body.user_id;
     var next = req.body.next;
@@ -44,7 +47,7 @@ userController.userfollowers = function (req, res) {
     else
         fields = ['user_id', 'name', 'avatar', 'followers'];
     if(user_id){
-        User.findOne({'_id':user_id}, function (err, user){
+        User.findById(user_id, function (err, user){
             if(user && user.followers && user.followers.length>0)
             {
                 var project;
@@ -92,11 +95,11 @@ userController.userfollowers = function (req, res) {
                             }
                         },
                             {
-                                $group:{
-                                    _id:user_id,
-                                    total:{$sum:"$amount"}
-                                }
+                            $group:{
+                                _id:user_id,
+                                total:{$sum:"$amount"}
                             }
+                        }
                         ]
                     ).then(function (rp){
                         console.log("rp----");
@@ -108,16 +111,20 @@ userController.userfollowers = function (req, res) {
                         {
                             user.redpack_total = 0;
                         }
+
+			followers.forEach(function(item){
+                            item.name = item.name.substring(0,6);
+                        })
+
                         console.log(user);
                         console.log(followers);
                         res.send({user:user,followers:followers})
                     });
-
                 })
-
-
             }
             else{
+                console.log('user');
+                console.log(user);
                 user.follower_num = 0;
                 delete user.followers;
                 res.send({user:user,followers:followers});
@@ -133,24 +140,84 @@ userController.userpacks = function (req, res) {
     var user_id = req.body.user_id;
     console.log('userid---');
     console.log(user_id);
+    var user=[];
+    var redpacks=[];
     if (user_id) {
-        RedPack.find({redpack_sent: 1, to_user_id: user_id}, ["level", "create_at", "amount"])
-            .then(function (redpacks) {
-                console.log(redpacks);
-                res.send({redpacks: redpacks});
-            });
+	    User.findById(user_id, function (err, user){
+		    RedPack.find({to_user_id: user_id}).populate("to_user_id", "name")
+		    .then(function (redpacks) {
+			    console.log(redpacks);
+			    res.send({user:user,redpacks: redpacks});
+		    });
+	    });
+    }
+    else
+    {
+	    res.send({user:user,redpacks: redpacks});
     }
 }
 
 userController.wxacode = function (req, res) {
     console.log(req.body);
     var scene = req.body.scene;
-    Weixin.getWXACode(scene, function (body, err) {
-        res.send(body);
+    var file_path = path.join(__dirname, '../public/wxacode/' + scene + '.png');
+
+    console.log(file_path);
+
+    if(fs.existsSync(file_path)) {
+        res.sendFile(scene+'.png', { root: path.join(__dirname, '../public/wxacode') });
+    }
+    else {
+        Weixin.getWXACode(scene, function () {
+            console.log('sending ' + file_path);
+            res.sendFile(scene+'.png', { root: path.join(__dirname, '../public/wxacode') });
+        })
+    }
+}
+
+userController.getInfo = function (req, res) {
+    // console.log(req.body);
+    var user_id = req.body.user_id;
+
+    User.findById(user_id, ["name","phone"]).then(user=>{
+        res.send(user)
     })
 }
 
+userController.updateInfo = function (req, res) {
+    // console.log(req.body);
+    var user_id = req.body.user_id;
+    var name = req.body.name;
+    var phone = req.body.phone;
+    if(name.length>0 && phone.length>0) {
+        User.findByIdAndUpdate(user_id,
+            {
+                name: name,
+                phone: phone
+            },
+            {new: true},
+            function (err, user) {
+                // console.log('user');
+                // console.log(user);
+                res.send({ok:1})
+            }
+        )
+    }
+}
 
+
+userController.getphone = function (req,res) {
+    var appId = _appid;
+    var sessionKey = req.body.session_key;
+    var encryptedData =req.body.encryptedData;
+    var iv = req.body.iv;
+
+    var pc = new WXBizDataCrypt(appId, sessionKey)
+
+    var data = pc.decryptData(encryptedData , iv)
+    // console.log(data)
+    res.send(data);
+}
 
 // admin
 
