@@ -15,8 +15,7 @@ mongoose.connect('mongodb://sa_ping:wending0304@172.30.0.5:27017/ping', { useNew
 
 var session = require('express-session');
 const RedisStore = require('connect-redis')(session);
-var redis = require("redis");
-var client = redis.createClient(6379, '172.30.0.4');
+var RedisClient = require("./models/Redis");
 
 var app = express();
 
@@ -35,7 +34,7 @@ app.use(session({
         port: 6379,
         pass: 'wending0304',
         ttl: 3600,
-        client: client
+        client: RedisClient
     }),
     secret: "sany_truck",
     resave: false,
@@ -85,7 +84,7 @@ app.use('/api', function (req, res, next) {
     console.log("user_id: " + user_id);
 
     if(session_id && user_id) {
-        client.get(session_id, function (err, reply) {
+        RedisClient.get(session_id, function (err, reply) {
             if(reply) {
                 var sess = JSON.parse(reply);
                 var user_id_in_session = sess.uid;
@@ -140,7 +139,7 @@ schedule.scheduleJob('0 * * * * ?', function(){
     PingController.startActivity();
 })
 
-schedule.scheduleJob('0 * * * * ?', function(){
+schedule.scheduleJob('0 */5 * * * ?', function(){
     console.log(new Date());
     PingController.updateCurrentPing();
 })

@@ -9,6 +9,10 @@ var config = require("../config/wx");
 var fs = require('fs');
 var path = require('path');
 const _appid = config.appid;
+
+var request = require('request');
+var gm = require("gm").subClass({ imageMagick: true });
+
 var userController = {};
 
 // wx
@@ -159,20 +163,53 @@ userController.userpacks = function (req, res) {
 
 userController.wxacode = function (req, res) {
     console.log(req.body);
-    var scene = req.body.scene;
-    var file_path = path.join(__dirname, '../public/wxacode/' + scene + '.png');
+    var user_id = req.body.user_id;
+
+    var base_path = path.join(__dirname, '../public/img_tmp');
+    var file_path = base_path + '/final_' + user_id + '.png';
+    var final_link = '/img_tmp' + '/final_' + user_id + '.jpg';
 
     console.log(file_path);
 
-    if(fs.existsSync(file_path)) {
-        res.sendFile(scene+'.png', { root: path.join(__dirname, '../public/wxacode') });
-    }
-    else {
-        Weixin.getWXACode(scene, function () {
-            console.log('sending ' + file_path);
-            res.sendFile(scene+'.png', { root: path.join(__dirname, '../public/wxacode') });
+    // if(fs.existsSync(file_path)) {
+    //     res.send({image: final_link});
+    // }
+    // else {
+        Weixin.getWXACode(user_id, function () {
+            console.log("here")
+            
+            var code_path = base_path + '/code_' + user_id + '.png';
+            var avatar_path = base_path + '/avatar_' + user_id + '.jpg';
+            var avatar_round_path = base_path + '/avatar_round_' + user_id + '.png';
+            var share_bg_path = base_path + '/share_bg.jpg';
+            var final_path = base_path + '/final_' + user_id + '.jpg';
+
+            User.findById(user_id).then(user => {
+                console.log(user.avatar);
+                gm(code_path).resize(162, 162).write(code_path, function (err) {
+                    gm(request(user.avatar)).resize(146, 146).write(avatar_path, function (err) {
+                        console.log(avatar_path);
+                        if (!err) {
+                            gm(146, 146, "none").fill(avatar_path).drawCircle(70, 70, 70, 0).write(avatar_round_path, function (err) {
+                                if (!err) {
+                                    gm().in('-page', '+0+0').in(share_bg_path).in('-page', '+200+77').in(avatar_round_path).in('-page', '+189+718').in(code_path).mosaic().write(final_path, function (err) {
+                                        if (!err) {
+                                            res.send({image: final_link});
+                                        }
+                                    })
+                                }else {
+                                    console.log(err);
+                                }
+                            })
+                        }
+                        else {
+                            console.log(err);
+                        }
+                    })
+                })
+            })
         })
-    }
+    // }
 }
 
 userController.getInfo = function (req, res) {

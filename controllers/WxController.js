@@ -132,9 +132,13 @@ wxController.payNotify = function(req, res) {
         Weixin.verifyNotify( xml, function(out_trade_no, openid){
             console.log('out_trade_no:' +out_trade_no);
             if ( out_trade_no && openid ) {
-                User.findOne({
-                    openid: openid
-                }).then(user => {
+                User.findOneAndUpdate({
+                    	openid: openid
+		    },
+		    {
+			$inc: {join_num: 1}
+		    }
+                ).then(user => {
                     UserPing.findById(out_trade_no).then(aUserPing => {
                         console.log("aUserPing");
                         console.log(aUserPing);

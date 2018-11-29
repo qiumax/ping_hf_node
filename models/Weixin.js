@@ -5,14 +5,14 @@ var request = require('request');
 const qs = require('querystring');
 var randomstring = require("randomstring");
 var fs = require("fs");
+
+var RedisClient = require("./Redis");
+
 const _appid = config.appid;
 const _secret = config.secret;
 const _key = config.key;
 const _mchid = config.mchid;
 const _notify_url = config.notify_url;
-
-var accessToken = "";
-var accessTokenTime = 0;
 
 function Weixin() {
 
@@ -210,46 +210,75 @@ Weixin.sendTemplateMsg = function (data) {
 }
 
 Weixin.getAccessToken = function() {
-    console.log("accessToken");
-    console.log(accessToken);
-
-    console.log("accessTokenTime");
-    console.log(accessTokenTime);
-
-    console.log("差值");
-    console.log(new Date().getTime()/1000-accessTokenTime);
-
-    if(accessToken && accessToken.length>0 && (new Date().getTime()/1000-accessTokenTime)<7200) {
-        return new Promise( function(resolve, reject) {
-            resolve(accessToken);
-        });
-    }
-    else {
-        var reqUrl = 'https://api.weixin.qq.com/cgi-bin/token?';
-        var params = {
-            appid: _appid,
-            secret: _secret,
-            grant_type: 'client_credential'
-        };
-
-        var options = {
-            method: 'get',
-            url: reqUrl+qs.stringify(params)
-        };
-        // console.log(options.url);
-        return new Promise( function(resolve, reject) {
-            request(options, function (err, res, body) {
-                if (res) {
-                    var data = JSON.parse(body);
-                    accessToken = data.access_token;
-                    accessTokenTime = Math.floor(new Date().getTime()/1000);
-                    resolve(accessToken);
-                } else {
-                    reject(err);
+    return new Promise( function(resolve, reject) {
+        RedisClient.get('wx_access_token', function(err, result) {
+            if (err) throw err;
+        
+            var data = JSON.parse(result);
+        
+            console.log('wx_access_token -> ', data);
+        
+            var re_apply = false;
+        
+            if(data && data.access_token && data.create_time) {
+                console.log("1")
+                var access_token = data.access_token;
+                var create_time = data.create_time;
+                // 2小时过期
+                if(access_token.length>0 && (new Date().getTime()/1000-create_time)<7000) {
+                    console.log("2");
+                    console.log("return -> " + access_token);
+                    resolve(access_token);
                 }
-            })
-        });
-    }
+                else {
+                    re_apply = true;
+                }
+            }
+            else {
+                re_apply = true;
+            }
+        
+            console.log("re_apply -> " + re_apply);
+        
+            if(re_apply) {
+                var reqUrl = 'https://api.weixin.qq.com/cgi-bin/token?';
+                var params = {
+                    appid: _appid,
+                    secret: _secret,
+                    grant_type: 'client_credential'
+                };
+            
+                var options = {
+                    method: 'get',
+                    url: reqUrl+qs.stringify(params)
+                };
+                
+                request(options, function (err, res, body) {
+                    if (res) {
+                        var data = JSON.parse(body);
+                        access_token = data.access_token;
+                        create_time = Math.floor(new Date().getTime()/1000);
+                    
+                        var data = {
+                            access_token: access_token,
+                            create_time: create_time
+                        }
+                    
+                        var data_str = JSON.stringify(data);
+                    
+                        RedisClient.set("wx_access_token", data_str, function (err, res) {
+                            if(err) throw err;
+                            console.log("2");
+                            console.log("return -> " + access_token);
+                            resolve(access_token);
+                        })
+                    } else {
+                        reject(err);
+                    }
+                })
+            }
+        })
+    })
 }
 
 // 微信红包
@@ -345,7 +374,7 @@ function sendRedpackSign(act_name,client_ip,mch_billno,
 // 小程序码
 Weixin.getWXACode = function(scene, cb) {
     this.getAccessToken().then(token => {
-        console.log('token1');
+        console.log('getWXACode get access_token ->');
         console.log(token);
         var reqUrl = 'https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token='+token;
 
@@ -361,7 +390,7 @@ Weixin.getWXACode = function(scene, cb) {
             body: string
         };
 
-        var stream = request(options).pipe(fs.createWriteStream('./public/wxacode/' + scene+'.png'));
+        var stream = request(options).pipe(fs.createWriteStream('./public/img_tmp/code_' + scene+'.png'));
         stream.on('finish', cb);
     })
 }

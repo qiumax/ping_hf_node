@@ -207,9 +207,6 @@ pingController.joinPing = function(req, res) {
                         console.log('aUserPing');
                         console.log(aUserPing);
 
-                        if(user.join_num>=0) user.join_num++;
-                        else user.join_num = 1;
-
                         if(!user.phone || user.phone.length==0) {
                             user.phone = req.body.phone
                         }
@@ -248,10 +245,23 @@ pingController.avatars = function(req, res) {
         pay_state: 1
     }).select('user_id').limit(5).populate({path:'user_id', select: 'avatar'}).then(ups=>{
         console.log(ups);
-        var avatars = [];
+	
+	var avatars = [];
+	
+        var avatars2 = [
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/5.jpg',
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/2.jpg',
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/3.jpg',
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/1.jpg',
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/4.jpg'	
+	];
+	
         ups.forEach(up => {
             avatars.push(up.user_id.avatar);
         })
+	
+	//avatars = avatars.concat(avatars2).slice(0,5);
+	
         res.send(avatars)
     })
 };
