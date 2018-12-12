@@ -11,8 +11,6 @@ var Redpack = require("../models/Redpack");
 
 var wxController = {};
 
-
-
 wxController.getWxUserInfo = function(req, res) {
 
     console.log(req.body);

@@ -8,9 +8,14 @@ var mongoose = require('mongoose');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 
+var app = express();
+
+var config = require('./config/Config')
+app.set('config', config);
+
 // DB
 mongoose.Promise = global.Promise;
-var db_url = 'mongodb://sa_ping:wending0304@172.30.0.5:27017/ping';
+var db_url = config.mongodb.url;
 var db_options = {
     useNewUrlParser: true,
     auto_reconnect:true
@@ -50,8 +55,6 @@ var session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 var RedisClient = require("./models/Redis");
 
-var app = express();
-
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -63,10 +66,10 @@ app.use(cookieParser());
 
 app.use(session({
     store: new RedisStore({
-        host: "172.30.0.4",
-        port: 6379,
-        pass: 'wending0304',
-        ttl: 3600,
+        host: config.redis.host,
+        port: config.redis.port,
+        pass: config.redis.pwd,
+        ttl: config.redis.ttl,
         client: RedisClient
     }),
     secret: "sany_truck",
@@ -172,19 +175,14 @@ schedule.scheduleJob('0 * * * * ?', function(){
     PingController.startActivity();
 })
 
-schedule.scheduleJob('0 */5 * * * ?', function(){
+schedule.scheduleJob('15 */2 * * * ?', function(){
     console.log(new Date());
-    // PingController.updateCurrentPing();
+    PingController.updateCurrentPing();
 })
 
-schedule.scheduleJob('0 */5 * * * ?', function(){
+schedule.scheduleJob('30 * * * * ?', function(){
     console.log(new Date());
-    // Ping.updateFullPing();
-})
-
-schedule.scheduleJob('30 */1 * * * ?', function(){
-    console.log(new Date());
-    // Ping.updateExpiredPing();
+    PingController.handlePingSchedule();
 })
 
 module.exports = app;

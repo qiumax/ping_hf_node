@@ -13,6 +13,9 @@ router.post('/joinPing', pingController.joinPing);
 
 router.post('/avatars', pingController.avatars);
 
+// 申请红包功能，每天支付
+// router.post('/testPay', pingController.testPay);
+
 // admin
 router.post('/addPing', pingController.addPing);
 

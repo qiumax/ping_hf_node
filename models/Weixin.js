@@ -1,6 +1,6 @@
 module.exports = Weixin;
 
-var config = require("../config/wx");
+var config = require("../config/Config");
 var request = require('request');
 const qs = require('querystring');
 var randomstring = require("randomstring");
@@ -8,11 +8,11 @@ var fs = require("fs");
 
 var RedisClient = require("./Redis");
 
-const _appid = config.appid;
-const _secret = config.secret;
-const _key = config.key;
-const _mchid = config.mchid;
-const _notify_url = config.notify_url;
+const _appid = config.wx.appid;
+const _secret = config.wx.secret;
+const _key = config.wx.key;
+const _mchid = config.wx.mchid;
+const _notify_url = config.wx.notify_url;
 
 function Weixin() {
 
@@ -46,7 +46,7 @@ Weixin.jsapipay = function (opts, cb) {
     var openid = opts.openid;
     var body = opts.description;
     var timeStamp = opts.timestamp;
-    var spbill_create_ip = '47.106.98.38';
+    var spbill_create_ip = config.ip;
     var url = "https://api.mch.weixin.qq.com/pay/unifiedorder";
     var formData  = "<xml>";
     formData  += "<appid>"+appid+"</appid>";  //appid

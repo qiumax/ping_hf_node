@@ -1,3 +1,6 @@
 var redis = require("redis");
+var config = require('../config/Config')
 
-module.exports = redis.createClient(6379, '172.30.0.4');
+var redis_client = redis.createClient(config.redis.port, config.redis.host)
+
+module.exports = redis_client;

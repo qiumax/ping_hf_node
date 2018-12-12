@@ -5,10 +5,11 @@ var RedPack = require("../models/Redpack");
 var UserPing = require("../models/UserPing");
 var Weixin = require("../models/Weixin");
 var WXBizDataCrypt = require("../models/WXBizDataCrypt");
-var config = require("../config/wx");
 var fs = require('fs');
 var path = require('path');
-const _appid = config.appid;
+
+var config = require("../config/Config");
+const _appid = config.wx.appid;
 
 var request = require('request');
 var gm = require("gm").subClass({ imageMagick: true });
