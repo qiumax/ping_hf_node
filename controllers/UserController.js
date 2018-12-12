@@ -186,13 +186,13 @@ userController.wxacode = function (req, res) {
 
             User.findById(user_id).then(user => {
                 console.log(user.avatar);
-                gm(code_path).resize(162, 162).write(code_path, function (err) {
-                    gm(request(user.avatar)).resize(146, 146).write(avatar_path, function (err) {
+                gm(code_path).resize(324, 324).write(code_path, function (err) {
+                    gm(request(user.avatar)).resize(292, 292).write(avatar_path, function (err) {
                         console.log(avatar_path);
                         if (!err) {
-                            gm(146, 146, "none").fill(avatar_path).drawCircle(70, 70, 70, 0).write(avatar_round_path, function (err) {
+                            gm(292, 292, "none").fill(avatar_path).drawCircle(140, 140, 140, 0).write(avatar_round_path, function (err) {
                                 if (!err) {
-                                    gm().in('-page', '+0+0').in(share_bg_path).in('-page', '+200+77').in(avatar_round_path).in('-page', '+189+718').in(code_path).mosaic().write(final_path, function (err) {
+                                    gm().in('-page', '+0+0').in(share_bg_path).in('-page', '+400+154').in(avatar_round_path).in('-page', '+378+1436').in(code_path).mosaic().write(final_path, function (err) {
                                         if (!err) {
                                             res.send({image: final_link});
                                         }
