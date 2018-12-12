@@ -8,10 +8,43 @@ var mongoose = require('mongoose');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 
+// DB
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://sa_ping:wending0304@172.30.0.5:27017/ping', { useNewUrlParser: true })
+var db_url = 'mongodb://sa_ping:wending0304@172.30.0.5:27017/ping';
+var db_options = {
+    useNewUrlParser: true,
+    auto_reconnect:true
+}
+var db = mongoose.connection;
+db.on('connecting', function() {
+    console.log('connecting to MongoDB...');
+});
+db.on('error', function(error) {
+    console.error('Error in MongoDb connection: ' + error);
+    mongoose.disconnect();
+});
+db.on('connected', function() {
+    console.log('MongoDB connected!');
+});
+db.once('open', function() {
+    console.log('MongoDB connection opened!');
+});
+db.on('reconnected', function () {
+    console.log('MongoDB reconnected!');
+});
+db.on('disconnected', function() {
+    console.log('MongoDB disconnected!');
+    connectWithRetry();
+});
+var connectWithRetry = function() {
+    mongoose.connect(db_url, db_options)
     .then(() =>  console.log('connection succesful'))
-.catch((err) => console.error(err));
+    .catch((err) => {
+        console.error('Failed to connect to mongo on startup - retrying in 5 sec', err);
+        setTimeout(connectWithRetry, 5000);
+    });
+};
+connectWithRetry();
 
 var session = require('express-session');
 const RedisStore = require('connect-redis')(session);
@@ -141,7 +174,7 @@ schedule.scheduleJob('0 * * * * ?', function(){
 
 schedule.scheduleJob('0 */5 * * * ?', function(){
     console.log(new Date());
-    PingController.updateCurrentPing();
+    // PingController.updateCurrentPing();
 })
 
 schedule.scheduleJob('0 */5 * * * ?', function(){

@@ -249,18 +249,18 @@ pingController.avatars = function(req, res) {
 	var avatars = [];
 	
         var avatars2 = [
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/5.jpg',
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/2.jpg',
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/3.jpg',
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/1.jpg',
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/4.jpg'	
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/6.jpg',
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/7.jpg',
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/8.jpg',
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/9.jpg',
+		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/10.jpg'	
 	];
 	
         ups.forEach(up => {
             avatars.push(up.user_id.avatar);
         })
 	
-	//avatars = avatars.concat(avatars2).slice(0,5);
+	avatars = avatars.concat(avatars2).slice(0,5);
 	
         res.send(avatars)
     })
