@@ -3,22 +3,16 @@ var config = {
     project_name: 'ping-xy',
      
     mongodb: {
-        //url: 'mongodb://sa_ping_xy:wending0304@172.17.0.7:27017/ping_xy'
-	    url: 'mongodb://sa_ping_xy:wending0304@127.0.0.1:27017/ping-xy'
+        url: 'mongodb://sa_ping_xy:wending0304@172.17.0.7:27017/ping_xy'
     },
     
-    // redis: {
-    //     host: '172.17.0.15',
-    //     port: 6379,
-    //     pwd: 'Wd03041985!',
-    //     ttl: 3600
-    // },
-	redis: {
-		host: '127.0.0.1',
-		port: 6379,
-		pwd: 'wending0304',
-		ttl: 3600
-	},
+    redis: {
+        host: '172.17.0.15',
+        port: 6379,
+        pwd: 'Wd03041985!',
+        ttl: 3600
+    },
+    
     wx: {
         appid: 'wxe3d56102bbe38265',
         secret: '865f64f74127d4dd20b6a63ccf27a102',

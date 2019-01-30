@@ -34,6 +34,7 @@ pingController.currentPing = function (req, res) {
             res.send({ping: ping, server_ts:ts});
         }
         else {
+	        res.send({ok:0})
             console.log("暂无拼团信息");
         }
     })
