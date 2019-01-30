@@ -16,7 +16,9 @@ var UserSchema = new Schema({
     country: String,
     password: String,
     followers: [String],
-    join_num: Number
+    join_num: Number,
+	extra_reward1:Number,
+	extra_reward2:Number
 }, {timestamps: {createdAt: 'created_at', updatedAt: 'updated_at'}});
 
 UserSchema.plugin(passportLocalMongoose);

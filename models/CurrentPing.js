@@ -2,6 +2,7 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var CurrentPingSchema = new Schema({
+	product_id: String,
     ping: {
         type: mongoose.Schema.ObjectId,
         ref: 'Ping'

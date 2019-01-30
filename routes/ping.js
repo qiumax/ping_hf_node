@@ -11,6 +11,9 @@ router.post('/currentPing', pingController.currentPing);
 
 router.post('/joinPing', pingController.joinPing);
 
+
+router.post('/joinPingOther', pingController.joinPingOther);
+
 router.post('/avatars', pingController.avatars);
 
 // 申请红包功能，每天支付

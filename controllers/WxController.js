@@ -74,7 +74,8 @@ wxController.getWxUserInfo = function(req, res) {
                                 gender: req.body.gender,
                                 city: req.body.city,
                                 province: req.body.province,
-                                country: req.body.country
+                                country: req.body.country,
+	                            join_num:0,
                             }),
                             req.body.password,
                             function(err, user) {
@@ -153,15 +154,15 @@ wxController.payNotify = function(req, res) {
                                     // 模板消息
                                     var data = {
                                         touser: user.openid,
-                                        template_id: "HkZES8gqOlFz4ENjE58ReYy_8H7-XujsUDG2k4o4rFk",
+                                        template_id: "0MrDY0yrsyW9ev7kJW732ex80ifHx1HiW1cQbFDs7H0",
                                         form_id: aUserPing.form_id,
                                         page: 'pages/mypings/index?user_ping_id='+aUserPing._id,
                                         data: {
-                                            keyword1: {value: "三一重卡预付款"},
+                                            keyword1: {value: "三一挖掘机预付款"},
                                             keyword2: {value: aUserPing.sub_fee/100 + "元"},
                                             keyword3: {value: aUserPing._id},
                                             keyword4: {value: moment().format('YYYY-MM-DD HH:mm:ss')},
-                                            keyword5: {value: "4009995318"}
+                                            keyword5: {value: "4000083131"}
                                         }
                                     }
                                     Weixin.sendTemplateMsg(data);
@@ -200,6 +201,14 @@ genRedpackId = function () {
 
 sendRedpack = function(username,user_ping_id, refer_id, level, amount) {
     User.findById(refer_id).then(refer1=>{
+    	if(refer1.extra_reward1>0 &&  level ==1)
+	    {
+	    	amount = refer1.extra_reward1
+	    }
+	    if(refer1.extra_reward2>0 &&  level ==2)
+	    {
+		    amount = refer1.extra_reward2
+	    }
         var redpack = new Redpack({
             level: level,
 	        username:username,

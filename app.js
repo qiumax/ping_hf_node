@@ -72,7 +72,7 @@ app.use(session({
         ttl: config.redis.ttl,
         client: RedisClient
     }),
-    secret: "sany_truck",
+    secret: "ping-xy",
     resave: false,
     saveUninitialized: false
 }));

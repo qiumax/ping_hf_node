@@ -11,6 +11,10 @@ var UserPingSchema = new Schema({
         type: mongoose.Schema.ObjectId,
         ref: 'Ping'
     },
+    product:{
+        type: mongoose.Schema.ObjectId,
+        ref: 'Product'
+    },
     sponsor: String,
     name: String,
     phone: String,
@@ -23,10 +27,18 @@ var UserPingSchema = new Schema({
     finish_num: Number,
     use_state: Number,
     bonus: Number,
+	location:String,//户籍地
+	shigong:String,//施工地
+	remark:String,//订单备注
+    price:Number,//产品总价
     need_refund: Boolean,
     refunded: Boolean,
     need_process: Boolean,
     processed: Boolean,
+    setupdetail:[{
+        desc: String,
+        num: Number
+    }],
     // m_name: String,
     // m_phone: String,
     // m_wx: String,

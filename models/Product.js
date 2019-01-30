@@ -11,6 +11,13 @@ var ProductSchema = new Schema({
         num: Number,
         bonus: Number
     }],
+    credit: [{
+        bili:String,
+        shoufu:Number,
+        time :String,
+        total :Number,
+        month : Number
+    }],
     expire: Number,
     sub_fee: Number,
 }, {timestamps: {createdAt: 'created_at', updatedAt: 'updated_at'}});

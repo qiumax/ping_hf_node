@@ -13,7 +13,8 @@ productController.product = function(req, res) {
 
     Product.findOne({'_id':req.body.id}, function (err, product) {
         console.log(product);
-        res.send(product);
+
+        res.send({product:product,version:'v001'});
     })
 };
 

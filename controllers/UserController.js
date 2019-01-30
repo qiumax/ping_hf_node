@@ -165,10 +165,11 @@ userController.userpacks = function (req, res) {
 userController.wxacode = function (req, res) {
     console.log(req.body);
     var user_id = req.body.user_id;
-
+    var type = req.body.type;
+    var product_id = req.body.product_id;
     var base_path = path.join(__dirname, '../public/img_tmp');
     var file_path = base_path + '/final_' + user_id + '.png';
-    var final_link = '/img_tmp' + '/final_' + user_id + '.jpg';
+    var final_link = '/img_tmp' + '/final_' + user_id + '_' + type + '.jpg';
 
     console.log(file_path);
 
@@ -176,14 +177,14 @@ userController.wxacode = function (req, res) {
     //     res.send({image: final_link});
     // }
     // else {
-        Weixin.getWXACode(user_id, function () {
+        Weixin.getWXACode(user_id + "_"+ product_id, function () {
             console.log("here")
             
-            var code_path = base_path + '/code_' + user_id + '.png';
+            var code_path = base_path + '/code_' + user_id +'.png';
             var avatar_path = base_path + '/avatar_' + user_id + '.jpg';
             var avatar_round_path = base_path + '/avatar_round_' + user_id + '.png';
-            var share_bg_path = base_path + '/share_bg.jpg';
-            var final_path = base_path + '/final_' + user_id + '.jpg';
+            var share_bg_path = base_path + '/share_bg_'+type+'.jpg';
+            var final_path = base_path + '/final_' + user_id + '_' + type + '.jpg';
 
             User.findById(user_id).then(user => {
                 console.log(user.avatar);
@@ -193,9 +194,15 @@ userController.wxacode = function (req, res) {
                         if (!err) {
                             gm(292, 292, "none").fill(avatar_path).drawCircle(140, 140, 140, 0).write(avatar_round_path, function (err) {
                                 if (!err) {
-                                    gm().in('-page', '+0+0').in(share_bg_path).in('-page', '+400+154').in(avatar_round_path).in('-page', '+378+1436').in(code_path).mosaic().write(final_path, function (err) {
+                                    gm().in('-page', '+0+0').in(share_bg_path).in('-page', '+544+154').in(avatar_round_path).in('-page', '+528+1967').in(code_path).mosaic().write(final_path, function (err) {
                                         if (!err) {
+                                            console.log('final_link:'+final_link)
                                             res.send({image: final_link});
+                                        }
+                                        else
+                                        {
+                                            console.log(err)
+                                            console.log("final_path="+final_path)
                                         }
                                     })
                                 }else {
@@ -212,6 +219,7 @@ userController.wxacode = function (req, res) {
         })
     // }
 }
+
 
 userController.getInfo = function (req, res) {
     // console.log(req.body);

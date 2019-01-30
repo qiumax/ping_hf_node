@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="38aa9675-b1f9-4f99-908c-fdfa62547dd5" name="ping-hf" url="http://94.191.39.145">
+        <fileTransfer host="94.191.39.145" port="22" rootFolder="/servers/nodes/ping_hf" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

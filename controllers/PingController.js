@@ -6,6 +6,7 @@ var PingShedule = require("../models/PingShedule");
 var CurrentPing = require('../models/CurrentPing');
 var User = require("../models/User");
 var UserPing = require("../models/UserPing");
+var UserPingOther = require("../models/UserPingOther");
 var Manager = require("../models/Manager");
 var Weixin = require("../models/Weixin");
 var moment = require('moment');
@@ -24,8 +25,9 @@ pingController.ping = function(req, res) {
 
 pingController.currentPing = function (req, res) {
     //console.log(req.body);
-
-    CurrentPing.findOne().populate('ping').then(currentPing =>{
+	var product_id = req.body.product_id
+	console.log(req.body)
+    CurrentPing.findOne({product_id:product_id}).populate('ping').then(currentPing =>{
         if(currentPing){
             var ping = currentPing.ping;
             var ts = new Date().getTime()/1000;
@@ -172,10 +174,10 @@ pingController.joinPing = function(req, res) {
                     console.log("user: ");
                     console.log(user);
 
-                    if(user.join_num>=3) {
-                        res.send({err: "您拼团次数已达3次"});
-                        return;
-                    }
+                    // if(user.join_num>=3) {
+                    //     res.send({err: "您拼团次数已达3次"});
+                    //     return;
+                    // }
 
                     // Manager.find().sort({'appoint_num':1}).limit(1)
                     // .then(managers=> {
@@ -184,13 +186,19 @@ pingController.joinPing = function(req, res) {
                     //
                     //     manager.appoint_num++;
                     //     manager.save();
-
+                    console.log(req.body.setup)
                     var userPing = new UserPing({
                         user_id: user_id,
                         ping_id: ping.id,
                         sponsor: user_id,
                         name: req.body.name,
+                        product:req.body.product_id,
+	                    location: req.body.location,
+                        shigong:req.body.shigong,
+	                    remark: req.body.remark,
                         phone: req.body.phone,
+                        setupdetail:JSON.parse(req.body.setup),
+                        price:req.body.price,
                         form_id: req.body.form_id,
                         sub_fee: product.sub_fee,
                         pay_state: 0,
@@ -219,7 +227,7 @@ pingController.joinPing = function(req, res) {
                             nonce_str: req.body.nonce_str,
                             sub_fee: aUserPing.sub_fee,
                             openid: user.openid,
-                            description: "三一重卡订金",
+                            description: "三一挖掘机订金",
                             timestamp: req.body.timestamp
                         }, function (pay_data) {
                             var prepay_id = pay_data.prepay_id;
@@ -236,6 +244,46 @@ pingController.joinPing = function(req, res) {
     })
 }
 
+
+
+// 参与拼团--地址信息不匹配失败
+pingController.joinPingOther = function(req, res) {
+    console.log(req.body);
+
+    var ping_id = req.body.ping_id;
+    var user_id = req.body.user_id;
+    User.findById(user_id).then( user => {
+        console.log("user: ");
+        console.log(user);
+        var userPingOther = new UserPingOther({
+            user_id: user_id,
+            name: req.body.name,
+            product:req.body.product_id,
+            location: req.body.location,
+            shigong:req.body.shigong,
+            remark: req.body.remark,
+            phone: req.body.phone,
+            setupdetail:JSON.parse(req.body.setup),
+            price:req.body.price,
+        })
+
+        userPingOther.save().then(aUserPingOther => {
+        console.log('aUserPingOther');
+        console.log(aUserPingOther);
+        if(!user.phone || user.phone.length==0) {
+            user.phone = req.body.phone
+        }
+        user.save();
+        res.send({ok:1});
+
+})
+
+})
+
+
+
+}
+
 pingController.avatars = function(req, res) {
     console.log(req.body);
 
@@ -249,11 +297,7 @@ pingController.avatars = function(req, res) {
 	var avatars = [];
 	
         var avatars2 = [
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/6.jpg',
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/7.jpg',
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/8.jpg',
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/9.jpg',
-		'https://ping-1257242347.cos.ap-chongqing.myqcloud.com/avatar/10.jpg'	
+
 	];
 	
         ups.forEach(up => {
@@ -269,57 +313,69 @@ pingController.avatars = function(req, res) {
 // 开始活动
 pingController.startActivity = function () {
     console.log('check startActivity');
+	CurrentPing.count({},function (err,count) {
+		console.log(count)
+		if(count<2)
+		{
+			console.log("不存在");
+			createFirstPing();
+		}
 
-    CurrentPing.findOne().populate('ping')
-        .then(currentPing=> {
-            console.log("CurrentPing: ");
-            console.log(currentPing);
-
-            // 不存在
-            if (!currentPing) {
-                console.log("不存在");
-                createFirstPing();
-            }
-        })
+	})
+    // CurrentPing.findOne().populate('ping')
+    //     .then(currentPing=> {
+    //         console.log("CurrentPing: ");
+    //         console.log(currentPing);
+    //
+    //         // 不存在
+    //         if (!currentPing) {
+    //             console.log("不存在");
+    //             createFirstPing();
+    //         }
+    //     })
 }
 
 // 更新当前的Ping
 pingController.updateCurrentPing = function () {
     console.log('updateCurrentPing');
 
-    CurrentPing.findOne().populate('ping')
-        .then(currentPing=>{
+    CurrentPing.find({}).populate('ping')
+        .then(currentPings=>{
             console.log("CurrentPing: ");
-            console.log(currentPing);
+            console.log(currentPings);
 
-            // 不存在
-            if(!currentPing) {
-                console.log("不存在");
-                // createPing();
+            for(var i=0;i<currentPings.length;i++){
+            	var currentPing = currentPings[i]
+	            // 不存在
+	            if(!currentPing) {
+		            console.log("不存在");
+		            // createPing();
+	            }
+	            else {
+		            var ping = currentPing.ping;
+
+		            if(ping.state==2) return;
+
+		            var now_date = new Date();
+		            var now_ts = new Date().getTime()/1000;
+
+		            // 已满
+		            // if(ping.finish_num>=200 && ping.updated_at<(now_date-1*60*1000)) {
+		            // if(ping.finish_num>=200) {
+			         //    console.log("已满");
+			         //    createPing();
+			         //    updatePing(ping);
+		            // }
+		            // 已过期
+		            // else if(ping.expire<(now_ts-1*60)) {
+		            if(ping.expire<now_ts) {
+			            console.log("已过期");
+			            createPing(ping.product_id);
+			            updatePing(ping);
+		            }
+	            }
             }
-            else {
-                var ping = currentPing.ping;
-                
-                if(ping.state==2) return;
 
-                var now_date = new Date();
-                var now_ts = new Date().getTime()/1000;
-
-                // 已满
-                // if(ping.finish_num>=200 && ping.updated_at<(now_date-1*60*1000)) {
-                if(ping.finish_num>=200) {
-                    console.log("已满");
-                    createPing();
-                    updatePing(ping);
-                }
-                // 已过期
-                // else if(ping.expire<(now_ts-1*60)) {
-                else if(ping.expire<now_ts) {
-                    console.log("已过期");
-                    createPing();
-                    updatePing(ping);
-                }
-            }
         })
 }
 
@@ -357,13 +413,13 @@ pingController.handlePingSchedule = function () {
                                     page: 'pages/mypings/index?user_ping_id='+aUserPing._id,
                                     data: {
                                         keyword1: {value: aUserPing._id},
-                                        keyword2: {value: "三一重卡"},
+                                        keyword2: {value: "三一挖掘机"},
                                         keyword3: {value: aUserPing.finish_num + "人"},
                                         keyword4: {value: moment().format('YYYY-MM-DD HH:mm:ss')},
                                         keyword5: {value: aUserPing.sub_fee / 100 + '元'},
                                         keyword6: {value: aUserPing.bonus + '元'},
                                         keyword7: {value: (ping.price_origin - aUserPing.bonus) + '元'},
-                                        keyword8: {value: "如有任何疑问，请致电: 4009995318"}
+                                        keyword8: {value: "如有任何疑问，请致电: 4000083131"}
                                     }
                                 }
                                 Weixin.sendTemplateMsg(data);
@@ -382,7 +438,7 @@ pingController.handlePingSchedule = function () {
 createFirstPing = function() {
     console.log("Creating First Ping");
 
-    var product_id = config.ping.product_id;
+    //var product_id = config.ping.product_id;
 
     Activity.findOne().then(activity=> {
         var now = new Date().getTime() / 1000;
@@ -392,53 +448,70 @@ createFirstPing = function() {
         // if(now >= activity.starttime && now <= (activity.starttime+30)) {
         if(now >= activity.starttime && now <= (activity.endtime)) {
             console.log("开始第一个Ping");
-            Product.findById(product_id).then(product => {
-                console.log("product: ");
-                console.log(product);
+            CurrentPing.find({}).then(curr_pings=>{
+            	var product_arr = new Array()
+            	if(curr_pings)
+	            {
+	            	curr_pings.forEach(ping=>{
+	            		product_arr.push(ping.product_id)
+		            })
+	            }
+				console.log(product_arr)
+	            Product.find({_id:{$nin:product_arr}}).then(products => {
+		            console.log("product: ");
+		            console.log(products);
 
-                var ts = new Date().getTime() / 1000;
-                var expire = ts + product.expire * 86400;
+		            //循环产生ping
+		            for(var i=0;i<products.length;i++){
+			            var product = products[i]
+			            var ts = new Date().getTime() / 1000;
+			            var expire = ts + product.expire * 86400;
 
-                var ping = new Ping({
-                    product_id: product_id,
-                    product_name: product.name,
-                    price_origin: product.price_origin,
-                    price_bottom: product.price_bottom,
-                    sponsor_bonus: product.sponsor_bonus,
-                    less_minus: product.less_minus,
-                    rules: product.rules,
-                    finish_num: 0,
-                    expire: expire,
-                    sub_fee: product.sub_fee,
-                    state: 1
-                });
+			            var ping = new Ping({
+				            product_id: product._id,
+				            product_name: product.name,
+				            price_origin: product.price_origin,
+				            price_bottom: product.price_bottom,
+				            sponsor_bonus: product.sponsor_bonus,
+				            less_minus: product.less_minus,
+				            rules: product.rules,
+				            finish_num: 0,
+				            expire: expire,
+				            sub_fee: product.sub_fee,
+				            state: 1
+			            });
 
-                ping.save().then(aPing => {
+			            ping.save().then(aPing => {
 
-                    console.log("New Current Ping");
-                    console.log(aPing);
+				            console.log("New Current Ping");
+				            console.log(aPing);
 
-                    var currentPing = new CurrentPing({
-                        ping: aPing._id
-                    })
+				            var currentPing = new CurrentPing({
+					            ping: aPing._id,
+					            product_id:aPing.product_id
+				            })
 
-                    CurrentPing.deleteMany({}, function (err) {
-                        if (err) console.log(err);
-                        currentPing.save().then(aCurrentPing => {
-                            console.log("Current Ping saved: ");
-                            console.log(aCurrentPing)
-                        })
-                    })
-                })
+				            CurrentPing.remove({product_id:aPing.product_id}, function (err) {
+					            if (err) console.log(err);
+					            currentPing.save().then(aCurrentPing => {
+						            console.log("Current Ping saved: ");
+						            console.log(aCurrentPing)
+					            })
+				            })
+			            })
+		            }
+	            })
+
             })
+
         }
     })
 }
 
-createPing = function() {
+createPing = function(product_id) {
     console.log("Creating Ping");
 
-    var product_id = config.ping.product_id;
+    // var product_id = config.ping.product_id;
 
     Activity.findOne().then(activity=> {
         var now = new Date().getTime() / 1000;
@@ -481,10 +554,11 @@ createPing = function() {
                 console.log(aPing);
 
                 var currentPing = new CurrentPing({
-                    ping: aPing._id
+                    ping: aPing._id,
+	                product_id:aPing.product_id
                 })
 
-                CurrentPing.deleteMany({},function (err) {
+                CurrentPing.remove({product_id:aPing.product_id},function (err) {
                     if (err) console.log(err);
                     currentPing.save().then(aCurrentPing => {
                         console.log("Current Ping saved: ");

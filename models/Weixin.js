@@ -389,8 +389,8 @@ Weixin.getWXACode = function(scene, cb) {
             method: "POST",
             body: string
         };
-
-        var stream = request(options).pipe(fs.createWriteStream('./public/img_tmp/code_' + scene+'.png'));
+        console.log(scene.split("_")[0])
+        var stream = request(options).pipe(fs.createWriteStream('./public/img_tmp/code_' + scene.split("_")[0]+'.png'));
         stream.on('finish', cb);
     })
 }
